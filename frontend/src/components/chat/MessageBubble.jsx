@@ -58,9 +58,7 @@ const AIMessage = ({ message, onFeedback }) => (
 
       {/* Meta row */}
       <div className="flex flex-wrap items-center gap-2 px-1">
-        {message.confidence !== undefined && (
-          <ConfidencePill score={message.confidence} />
-        )}
+
 
         {message.sources && message.sources.length > 0 && (
           <div className="flex items-center gap-1 text-[10px] text-gray-600">

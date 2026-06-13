@@ -4,19 +4,23 @@ import {
   MessageSquare,
   BarChart3,
   Zap,
-  Settings,
-  HelpCircle,
   ChevronRight,
+  Database,
+  Inbox,
+  Sliders,
+  HelpCircle,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { label: 'Chat', icon: MessageSquare, to: '/' },
-  { label: 'Dashboard', icon: BarChart3, to: '/admin' },
+  { label: 'Customer Chat', icon: MessageSquare, to: '/' },
+  { label: 'Admin Dashboard', icon: BarChart3, to: '/admin' },
+  { label: 'Knowledge Base', icon: Database, to: '/admin/knowledge' },
+  { label: 'Escalations', icon: Inbox, to: '/admin/escalations' },
+  { label: 'Agent Settings', icon: Sliders, to: '/admin/settings' },
 ];
 
 const BOTTOM_ITEMS = [
-  { label: 'Settings', icon: Settings, to: '#' },
-  { label: 'Help', icon: HelpCircle, to: '#' },
+  { label: 'Help & Docs', icon: HelpCircle, to: '#' },
 ];
 
 export default function Sidebar() {

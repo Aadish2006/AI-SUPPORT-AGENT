@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RotateCcw, Shield, Wifi } from 'lucide-react';
 
 export default function ChatHeader({ isEscalated, sessionId, onClear }) {
+  const [agentName, setAgentName] = useState('SupportAI');
+
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('agentSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed.agentName) {
+          setAgentName(parsed.agentName);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-surface-800/50 backdrop-blur-sm shrink-0">
       <div className="flex items-center gap-3">
@@ -17,7 +31,7 @@ export default function ChatHeader({ isEscalated, sessionId, onClear }) {
 
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-white">SupportAI Assistant</h2>
+            <h2 className="text-sm font-semibold text-white">{agentName} Assistant</h2>
             {isEscalated && (
               <span className="status-badge bg-accent-red/10 border border-accent-red/20 text-accent-red">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent-red" />

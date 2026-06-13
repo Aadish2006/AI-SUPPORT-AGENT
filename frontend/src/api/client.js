@@ -48,4 +48,44 @@ export const apiClient = {
   getFeedbackStats() {
     return request('/analytics/feedback');
   },
+
+  getDocuments() {
+    return request('/knowledge/documents');
+  },
+
+  async uploadDocument(formData) {
+    const response = await fetch(`${API_BASE_URL}/knowledge/documents`, {
+      method: 'POST',
+      body: formData,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.message || 'Failed to upload document');
+    }
+    return payload.data;
+  },
+
+  createFaq(body) {
+    return request('/knowledge/faqs', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  deleteDocument(documentId) {
+    return request(`/knowledge/documents/${documentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getEscalations() {
+    return request('/escalations');
+  },
+
+  updateEscalationStatus(escalationId, body) {
+    return request(`/escalations/${escalationId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  },
 };

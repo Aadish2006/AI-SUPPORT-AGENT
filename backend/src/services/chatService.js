@@ -23,18 +23,43 @@ export const chatService = {
     const memory = await memoryService.getSessionMemory(session.id);
     const ragResult = await ragService.answerQuestion({ question: message, memory });
 
-    if (ragResult.confidence < CONFIDENCE_THRESHOLD) {
+    const lowerMessage = message.toLowerCase();
+    const unsupportedActionKeywords = [
+      'refund', 'cancel my order', 'change my email', 'reset my password for me',
+      'approve', 'purchase', 'charge', 'delete my account'
+    ];
+    const isUnsupportedAction = unsupportedActionKeywords.some(kw => lowerMessage.includes(kw));
+    const noDocsFound = !ragResult.sources || ragResult.sources.length === 0;
+
+    const isUnableToAnswer = ragResult.answer && (
+      ragResult.answer.toLowerCase().includes('cannot find information') || 
+      ragResult.answer.toLowerCase().includes('unable to find') ||
+      ragResult.answer.toLowerCase().includes('do not have information')
+    );
+
+    const shouldEscalate = isUnsupportedAction || noDocsFound || isUnableToAnswer;
+
+    if (shouldEscalate) {
+      const reason = isUnsupportedAction
+        ? 'Action requested that AI cannot perform'
+        : noDocsFound
+        ? 'No relevant documents found in knowledge base'
+        : 'Query is outside the knowledge base';
+
       const escalation = await escalationService.escalate({
         sessionId: session.id,
         latestQuestion: message,
-        confidence: ragResult.confidence
+        confidence: ragResult.confidence || 0.5,
+        reason
       });
 
       const assistantMessage = await chatRepository.createMessage({
         sessionId: session.id,
         role: 'assistant',
-        content: "I'm connecting you with a human support agent.",
-        confidence: ragResult.confidence,
+        content: isUnsupportedAction 
+          ? "This request requires human assistance. Connecting you to a support specialist..."
+          : "I cannot find information regarding this query. Connecting you to a human agent...",
+        confidence: ragResult.confidence || 0.5,
         metadata: {
           status: 'escalated',
           escalationId: escalation.id,
@@ -45,14 +70,14 @@ export const chatService = {
       await analyticsService.recordEscalated({
         sessionId: session.id,
         messageId: userMessage.id,
-        confidence: ragResult.confidence
+        confidence: ragResult.confidence || 0.5
       });
 
       return {
         sessionId: session.id,
         messageId: assistantMessage.id,
         status: 'escalated',
-        confidence: ragResult.confidence,
+        confidence: ragResult.confidence || 0.5,
         message: assistantMessage.content,
         escalationId: escalation.id
       };

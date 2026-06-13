@@ -1,34 +1,15 @@
 import React from 'react';
-import {
-  MessageSquare,
-  CheckCircle,
-  AlertTriangle,
-  Brain,
-  TrendingUp,
-  Users,
-  Star,
-  Clock,
-  Download,
-  RefreshCw,
-} from 'lucide-react';
+import { MessageSquare, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import StatCard from './StatCard';
-import ResolutionPieChart from './ResolutionPieChart';
-import QueriesLineChart from './QueriesLineChart';
-import TopicsBarChart from './TopicsBarChart';
-import UnresolvedQuestionsTable from './UnresolvedQuestionsTable';
-import FeedbackStatsPanel from './FeedbackStatsPanel';
 
 export default function AdminDashboard() {
-  const {
-    stats,
-    dailyQueries,
-    topicDistribution,
-    resolutionData,
-    feedbackStats,
-    unresolvedQuestions,
-    negativeFeedback,
-  } = useAnalytics();
+  const { stats, error } = useAnalytics();
+
+  // Fallbacks in case backend has no data or is not yet initialized
+  const displayTotal = stats?.totalQueries || 0;
+  const displayResolved = stats?.resolvedByAI || 0;
+  const displayEscalated = stats?.escalated || 0;
 
   const now = new Date().toLocaleString('en-US', {
     month: 'short',
@@ -38,97 +19,67 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-surface-900">
+    <div className="flex flex-col h-full bg-surface-900 overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-surface-800/80 backdrop-blur-sm border-b border-white/[0.05] px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-white">Analytics Dashboard</h1>
+            <h1 className="text-lg font-bold text-white">System Dashboard</h1>
             <p className="text-xs text-gray-500 mt-0.5">Last updated: {now}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="btn-ghost text-xs">
-              <Download className="w-3.5 h-3.5" />
-              Export
-            </button>
-            <button className="btn-ghost text-xs">
-              <RefreshCw className="w-3.5 h-3.5" />
-              Refresh
-            </button>
-          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-ghost text-xs"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </button>
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Main Content Area */}
+      <div className="p-6 max-w-6xl w-full mx-auto space-y-6">
+        {error && (
+          <div className="p-4 bg-accent-yellow/5 border border-accent-yellow/20 rounded-2xl text-xs text-accent-yellow">
+            Note: Showing offline cache. Check backend connection to sync live data.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard
             icon={MessageSquare}
             label="Total Queries"
-            value={stats.totalQueries}
-            subLabel="All time"
-            trend="up"
-            trendValue="+12.4%"
+            value={displayTotal}
+            subLabel="All incoming customer requests"
             color="brand"
             delay={0}
           />
           <StatCard
             icon={CheckCircle}
-            label="Resolution Rate"
-            value={`${stats.resolutionRate}%`}
-            subLabel="AI resolved"
-            trend="up"
-            trendValue="+2.1%"
+            label="Resolved Queries"
+            value={displayResolved}
+            subLabel="Questions answered by AI assistant"
             color="green"
             delay={1}
           />
           <StatCard
             icon={AlertTriangle}
-            label="Escalation Rate"
-            value={`${stats.escalationRate}%`}
-            subLabel="Human handoff"
-            trend="down"
-            trendValue="-1.3%"
+            label="Escalated Queries"
+            value={displayEscalated}
+            subLabel="Transferred to human agents"
             color="yellow"
             delay={2}
           />
-          <StatCard
-            icon={Brain}
-            label="Avg Confidence"
-            value={`${Math.round(stats.avgConfidence * 100)}%`}
-            subLabel="AI certainty"
-            trend="up"
-            trendValue="+0.8%"
-            color="blue"
-            delay={3}
-          />
         </div>
 
-        {/* Secondary stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard icon={Users} label="Active Users" value={stats.activeUsers} subLabel="Past 30 days" trend="up" trendValue="+8%" color="brand" delay={4} />
-          <StatCard icon={Star} label="Satisfaction" value={`${stats.satisfactionScore * 20}`} subLabel="Out of 100" trend="up" trendValue="+3.2%" color="green" delay={5} />
-          <StatCard icon={Clock} label="Avg Response" value={0} subLabel="1.4 seconds" color="blue" delay={6} />
+        {/* Quick System Summary Banner */}
+        <div className="glass-card p-6 bg-gradient-card relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-glow opacity-30 pointer-events-none" />
+          <h2 className="text-sm font-semibold text-white mb-2">Platform Overview</h2>
+          <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
+            The SupportAI system utilizes a Retrieval-Augmented Generation (RAG) framework with Gemini to answer incoming customer questions. Queries that do not match available documentation or require actions are deterministically escalated to support agents.
+          </p>
         </div>
-
-        {/* Charts row */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-2">
-            <ResolutionPieChart data={resolutionData} />
-          </div>
-          <div className="lg:col-span-3 flex">
-            <QueriesLineChart data={dailyQueries} />
-          </div>
-        </div>
-
-        {/* Topics + Unresolved */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <TopicsBarChart data={topicDistribution} />
-          <UnresolvedQuestionsTable data={unresolvedQuestions} />
-        </div>
-
-        {/* Feedback */}
-        <FeedbackStatsPanel stats={feedbackStats} negativeList={negativeFeedback} />
       </div>
     </div>
   );
