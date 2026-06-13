@@ -8,6 +8,9 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "migrate": "node src/database/runMigrations.js",
+    "seed": "node src/database/seedDemoData.js",
+    "kb:reset": "node src/database/resetKnowledgeBase.js",
+    "gemini:models": "node src/ai/listGeminiModels.js",
     "lint": "eslint src",
     "test": "node --test"
   },

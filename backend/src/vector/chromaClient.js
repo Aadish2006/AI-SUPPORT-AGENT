@@ -9,6 +9,8 @@ export const chromaClient = new ChromaClient({
 
 export async function getKnowledgeCollection() {
   return chromaClient.getOrCreateCollection({
-    name: chromaConfig.collectionName
+    name: chromaConfig.collectionName,
+    // We generate embeddings with Gemini ourselves, so Chroma should only store/query vectors.
+    embeddingFunction: null
   });
 }

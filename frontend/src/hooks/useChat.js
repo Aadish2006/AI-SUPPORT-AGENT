@@ -1,50 +1,28 @@
 import { useState, useCallback, useRef } from 'react';
-import { INITIAL_MESSAGES, AI_RESPONSES, DEFAULT_RESPONSE } from '../data/mockMessages';
+import { apiClient } from '../api/client';
 import { generateId } from '../utils/formatters';
-import {
-  CONFIDENCE_THRESHOLD,
-  ESCALATION_KEYWORDS,
-  TYPING_DELAY_MS,
-  MIN_RESPONSE_DELAY_MS,
-  MAX_RESPONSE_DELAY_MS,
-} from '../utils/constants';
 
-const getAIResponse = (userText) => {
-  const lower = userText.toLowerCase();
+const sourceLabel = (source) => {
+  if (typeof source === 'string') return source;
+  return source?.title || source?.sourceName || source?.documentId || 'knowledge base';
+};
 
-  // Check for escalation keywords first
-  const shouldEscalate = ESCALATION_KEYWORDS.some((kw) => lower.includes(kw));
-
-  // Find matching scripted response
-  const match = AI_RESPONSES.find((r) =>
-    r.triggers.some((t) => lower.includes(t))
-  );
-
-  if (match) return match;
-
-  if (shouldEscalate) {
-    return {
-      confidence: 0.35,
-      escalate: true,
-      content: `I understand this is an important matter. To ensure it's handled correctly, I'll need to connect you with a human specialist who can access your full account details and resolve this promptly.\n\nA support agent will join this conversation shortly.`,
-      sources: ['escalation-policy.pdf'],
-    };
-  }
-
-  return DEFAULT_RESPONSE;
+const initialMessage = {
+  id: 'sys-1',
+  type: 'system',
+  content: 'AI Support Agent is online. How can I help you today?',
+  timestamp: new Date().toISOString(),
 };
 
 export const useChat = () => {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState([initialMessage]);
   const [isTyping, setIsTyping] = useState(false);
-  const [isEscalated, setIsEscalated] = useState(
-    INITIAL_MESSAGES.some((m) => m.escalated)
-  );
-  const [sessionId] = useState(() => generateId());
+  const [isEscalated, setIsEscalated] = useState(false);
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const typingTimeout = useRef(null);
 
-  const sendMessage = useCallback((text) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback(async (text) => {
+    if (!text.trim() || isTyping) return;
 
     const userMsg = {
       id: generateId(),
@@ -56,42 +34,56 @@ export const useChat = () => {
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
-    const response = getAIResponse(text);
-    const delay = MIN_RESPONSE_DELAY_MS + Math.random() * (MAX_RESPONSE_DELAY_MS - MIN_RESPONSE_DELAY_MS);
+    try {
+      const result = await apiClient.sendMessage({
+        sessionId,
+        userId: 'demo-user',
+        message: userMsg.content,
+      });
 
-    typingTimeout.current = setTimeout(() => {
       const aiMsg = {
-        id: generateId(),
+        id: result.messageId,
         type: 'ai',
-        content: response.content,
-        timestamp: new Date().toISOString(),
-        confidence: response.confidence,
-        sources: response.sources || [],
+        content: result.response || result.message,
+        timestamp: result.timestamp || new Date().toISOString(),
+        confidence: result.confidence,
+        sources: (result.sources || []).map(sourceLabel),
         feedback: null,
-        escalated: !!response.escalate,
+        escalated: result.status === 'escalated',
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
 
-      if (response.escalate || response.confidence < CONFIDENCE_THRESHOLD) {
+      if (result.status === 'escalated') {
         setIsEscalated(true);
-
-        // Add system escalation message
-        setTimeout(() => {
-          const escalationMsg = {
+        setMessages((prev) => [
+          ...prev,
+          {
             id: generateId(),
             type: 'system',
-            content: '🔴 Escalated to Human Agent — A specialist will join shortly.',
+            content: 'Escalated to Human Agent - A specialist will join shortly.',
             timestamp: new Date().toISOString(),
-          };
-          setMessages((prev) => [...prev, escalationMsg]);
-        }, 600);
+          },
+        ]);
       }
-    }, TYPING_DELAY_MS + delay);
-  }, []);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          type: 'system',
+          content: `Backend error: ${error.message}. Check that backend, PostgreSQL, ChromaDB, and Gemini API key are configured.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [isTyping, sessionId]);
 
-  const setFeedback = useCallback((messageId, value) => {
+  const setFeedback = useCallback(async (messageId, value) => {
+    const rating = value === 'up' ? 'thumbs_up' : 'thumbs_down';
+
     setMessages((prev) =>
       prev.map((m) =>
         m.id === messageId
@@ -99,17 +91,36 @@ export const useChat = () => {
           : m
       )
     );
-  }, []);
+
+    try {
+      await apiClient.submitFeedback({
+        sessionId,
+        messageId,
+        rating,
+      });
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          type: 'system',
+          content: `Feedback was not saved: ${error.message}`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+  }, [sessionId]);
 
   const clearChat = useCallback(() => {
     setMessages([
       {
+        ...initialMessage,
         id: generateId(),
-        type: 'system',
         content: 'New session started. How can I help you?',
         timestamp: new Date().toISOString(),
       },
     ]);
+    setSessionId(crypto.randomUUID());
     setIsEscalated(false);
     setIsTyping(false);
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
