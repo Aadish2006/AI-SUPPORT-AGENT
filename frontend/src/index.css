@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-900 text-gray-100 font-sans antialiased;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-400 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand-500;
+  }
+}
+
+@layer components {
+  /* Glass card */
+  .glass-card {
+    @apply bg-surface-800 border border-white/[0.06] rounded-2xl shadow-card backdrop-blur-sm;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-400 to-purple-400 bg-clip-text text-transparent;
+  }
+
+  /* Status badge */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 
+           hover:text-white hover:bg-surface-700 transition-all duration-200 cursor-pointer;
+  }
+
+  .nav-item.active {
+    @apply text-white bg-surface-600 shadow-glow-sm;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 
+           text-white text-sm font-medium transition-all duration-200 shadow-glow-sm 
+           hover:shadow-glow-brand active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-400 
+           hover:text-white hover:bg-surface-600 text-sm transition-all duration-200;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full bg-surface-700 border border-white/[0.08] rounded-xl px-4 py-3 
+           text-sm text-white placeholder-gray-500 outline-none 
+           focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all duration-200;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply glass-card p-5 relative overflow-hidden;
+  }
+
+  /* Message bubble base */
+  .msg-user {
+    @apply bg-brand-500 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-[75%] shadow-message;
+  }
+
+  .msg-ai {
+    @apply bg-surface-700 border border-white/[0.06] text-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%] shadow-message;
+  }
+
+  .msg-system {
+    @apply bg-surface-600/50 border border-white/[0.04] text-gray-400 rounded-xl px-4 py-2.5 text-xs text-center max-w-lg mx-auto;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Shimmer skeleton */
+  .skeleton {
+    @apply bg-surface-600 rounded animate-pulse;
+    background: linear-gradient(
+      90deg,
+      theme('colors.surface.600') 25%,
+      theme('colors.surface.500') 50%,
+      theme('colors.surface.600') 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
