@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/react-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
   <img src="https://img.shields.io/badge/gemini-2.5--flash-4285F4?style=flat-square&logo=google&logoColor=white" />
   <img src="https://img.shields.io/badge/postgres-16-4169E1?style=flat-square&logo=postgresql&logoColor=white" />
-  <img src="https://img.shields.io/badge/chromadb-vector--store-FF6F00?style=flat-square" />
+  <img src="https://img.shields.io/badge/pinecone--store-FF6F00?style=flat-square" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
 </p>
 
