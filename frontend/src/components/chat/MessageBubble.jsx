@@ -7,25 +7,25 @@ import FeedbackButtons from './FeedbackButtons';
 import { BookOpen } from 'lucide-react';
 
 const UserMessage = ({ message }) => (
-  <div className="flex justify-end gap-2 px-4 py-1.5 animate-slide-up">
-    <div className="flex flex-col items-end gap-1 max-w-[75%]">
+  <div className="flex justify-end gap-3 px-4 py-2 animate-slide-up">
+    <div className="flex flex-col items-end gap-1 max-w-[72%]">
       <div className="msg-user">
-        <p className="text-sm leading-relaxed">{message.content}</p>
+        <p className="text-sm leading-relaxed break-words">{message.content}</p>
       </div>
-      <span className="text-[10px] text-gray-600 px-1">{formatTime(message.timestamp)}</span>
+      <span className="text-[11px] text-gray-400 px-1">{formatTime(message.timestamp)}</span>
     </div>
-    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center shrink-0 text-xs font-bold text-white mt-1">
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center shrink-0 text-sm font-bold text-white mt-1">
       U
     </div>
   </div>
 );
 
 const AIMessage = ({ message, onFeedback }) => (
-  <div className="flex items-start gap-3 px-4 py-1.5 animate-slide-up">
-    <div className="w-7 h-7 rounded-full bg-gradient-brand flex items-center justify-center shrink-0 shadow-glow-sm mt-1">
-      <span className="text-[10px] font-bold text-white">AI</span>
+  <div className="flex items-start gap-4 px-4 py-2 animate-slide-up">
+    <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center shrink-0 shadow-glow-sm mt-1">
+      <span className="text-sm font-bold text-white">AI</span>
     </div>
-    <div className="flex flex-col gap-1.5 max-w-[80%]">
+    <div className="flex flex-col gap-2 max-w-[78%]">
       <div className="msg-ai">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -57,24 +57,24 @@ const AIMessage = ({ message, onFeedback }) => (
       </div>
 
       {/* Meta row */}
-      <div className="flex flex-wrap items-center gap-2 px-1">
-
-
+      <div className="flex items-center gap-3 px-1">
         {message.sources && message.sources.length > 0 && (
-          <div className="flex items-center gap-1 text-[10px] text-gray-600">
-            <BookOpen className="w-2.5 h-2.5" />
-            <span>{message.sources.join(', ')}</span>
+          <div className="flex items-center gap-2 text-[11px] text-gray-400">
+            <BookOpen className="w-4 h-4 text-gray-400" />
+            <span className="text-xs text-gray-400">{message.sources.join(', ')}</span>
           </div>
         )}
 
-        <span className="text-[10px] text-gray-600 ml-auto">{formatTime(message.timestamp)}</span>
+        <span className="text-[11px] text-gray-400 ml-auto">{formatTime(message.timestamp)}</span>
       </div>
 
-      <FeedbackButtons
-        messageId={message.id}
-        feedback={message.feedback}
-        onFeedback={onFeedback}
-      />
+      <div className="pt-1">
+        <FeedbackButtons
+          messageId={message.id}
+          feedback={message.feedback}
+          onFeedback={onFeedback}
+        />
+      </div>
     </div>
   </div>
 );

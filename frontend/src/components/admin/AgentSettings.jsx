@@ -39,19 +39,31 @@ export default function AgentSettings() {
 
   return (
     <div className="flex flex-col h-full bg-surface-900 overflow-y-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-surface-800/80 backdrop-blur-sm border-b border-white/[0.05] px-6 py-4">
-        <div>
-          <h1 className="text-lg font-bold text-white">Agent Settings</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Configure chatbot identity, behavior, and settings</p>
+      <div className="p-6 max-w-4xl w-full mx-auto space-y-6">
+        <div className="glass-card relative overflow-hidden p-6 sm:p-7 bg-gradient-card">
+          <div className="absolute inset-0 bg-gradient-glow opacity-25 pointer-events-none" />
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-[11px] font-medium text-brand-300 mb-3">
+              <Sliders className="w-3 h-3" />
+              Assistant configuration
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Agent Settings</h1>
+            <p className="text-sm text-gray-400 mt-2 max-w-2xl leading-relaxed">
+              Configure the assistant identity, tone, and memory behavior from a single place.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="p-6 max-w-xl w-full mx-auto space-y-6">
         <div className="glass-card p-6">
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-brand-400" />
             <h2 className="text-sm font-semibold text-white">Identity & Logic Config</h2>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-[11px] text-gray-400 bg-surface-700/70 border border-white/[0.05] px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
+              Local settings only
+            </div>
           </div>
 
           <form onSubmit={handleSave} className="space-y-5">
@@ -85,8 +97,23 @@ export default function AgentSettings() {
               <p className="text-[10px] text-gray-600 mt-1">Controls the tone and format of AI responses.</p>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border border-white/[0.05] bg-surface-700/50 px-3 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">Assistant</p>
+                <p className="mt-1 text-sm font-semibold text-white truncate">{agentName}</p>
+              </div>
+              <div className="rounded-xl border border-white/[0.05] bg-surface-700/50 px-3 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">Tone</p>
+                <p className="mt-1 text-sm font-semibold text-white capitalize">{responseStyle}</p>
+              </div>
+              <div className="rounded-xl border border-white/[0.05] bg-surface-700/50 px-3 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">Memory</p>
+                <p className="mt-1 text-sm font-semibold text-white">{memoryEnabled ? 'Enabled' : 'Disabled'}</p>
+              </div>
+            </div>
+
             {/* Memory Enabled */}
-            <div className="flex items-center justify-between p-3 bg-surface-700/60 rounded-xl border border-white/[0.04]">
+            <div className="flex items-center justify-between p-4 bg-surface-700/60 rounded-xl border border-white/[0.04]">
               <div>
                 <span className="block text-xs font-semibold text-white">Multi-turn Memory</span>
                 <span className="block text-[10px] text-gray-400 mt-0.5">Remember conversation history in each chat session</span>
@@ -130,6 +157,21 @@ export default function AgentSettings() {
               </button>
             </div>
           </form>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="glass-card p-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Identity</p>
+            <p className="text-sm font-semibold text-white mt-1 truncate">{agentName}</p>
+          </div>
+          <div className="glass-card p-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Tone</p>
+            <p className="text-sm font-semibold text-white mt-1 capitalize">{responseStyle}</p>
+          </div>
+          <div className="glass-card p-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Memory</p>
+            <p className="text-sm font-semibold text-white mt-1">{memoryEnabled ? 'Enabled' : 'Disabled'}</p>
+          </div>
         </div>
       </div>
     </div>

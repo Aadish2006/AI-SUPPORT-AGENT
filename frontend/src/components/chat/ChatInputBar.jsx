@@ -33,8 +33,8 @@ export default function ChatInputBar({ onSend, disabled }) {
   const canSend = value.trim().length > 0 && !disabled;
 
   return (
-    <div className="px-4 pb-4 pt-3 border-t border-white/[0.05] bg-surface-800/30 shrink-0">
-      <div className={`flex items-end gap-2 bg-surface-700 border rounded-2xl px-4 py-3 transition-all duration-200 ${
+    <div className="px-3 sm:px-4 pb-4 pt-3 border-t border-white/[0.05] bg-surface-800/30 shrink-0">
+      <div className={`flex items-end gap-3 bg-surface-700 border rounded-2xl px-3 sm:px-4 py-3 transition-all duration-200 ${
         canSend ? 'border-brand-500/40 shadow-glow-sm' : 'border-white/[0.07]'
       }`}>
         {/* Attachment */}
@@ -51,7 +51,7 @@ export default function ChatInputBar({ onSend, disabled }) {
           placeholder="Ask a question or describe your issue…"
           rows={1}
           disabled={disabled}
-          className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 resize-none outline-none leading-relaxed max-h-40 py-0.5 scrollbar-hide"
+          className="flex-1 bg-transparent text-sm sm:text-base text-white placeholder-gray-500 resize-none outline-none leading-relaxed max-h-40 py-1 scrollbar-hide"
         />
 
         {/* Right actions */}
@@ -63,13 +63,15 @@ export default function ChatInputBar({ onSend, disabled }) {
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className={`p-2 rounded-xl transition-all duration-200 ${
+            className={`px-3 py-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
               canSend
                 ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-glow-sm hover:shadow-glow-brand active:scale-95'
                 : 'bg-surface-600 text-gray-600 cursor-not-allowed'
             }`}
+            aria-label="Send message"
           >
-            <Send className="w-3.5 h-3.5" />
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm">Send</span>
           </button>
         </div>
       </div>
