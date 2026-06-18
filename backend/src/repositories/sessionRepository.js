@@ -3,8 +3,13 @@ import { query } from '../database/pool.js';
 export const sessionRepository = {
   async findOrCreate(sessionId, userId) {
     if (sessionId) {
-      const existing = await query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
-      if (existing.rows[0]) return existing.rows[0];
+      const result = await query(
+        `INSERT INTO sessions (id, user_id) VALUES ($1, $2)
+         ON CONFLICT (id) DO UPDATE SET updated_at = NOW()
+         RETURNING *`,
+        [sessionId, userId ?? null]
+      );
+      return result.rows[0];
     }
 
     const created = await query(
