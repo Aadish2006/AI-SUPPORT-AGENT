@@ -9,6 +9,9 @@ import { ragService } from './ragService.js';
 export const chatService = {
   async handleMessage({ sessionId, userId, message }) {
     const session = await sessionRepository.findOrCreate(sessionId, userId);
+
+    const memory = await memoryService.getSessionMemory(session.id);
+
     const userMessage = await chatRepository.createMessage({
       sessionId: session.id,
       role: 'user',
@@ -20,7 +23,6 @@ export const chatService = {
       messageId: userMessage.id
     });
 
-    const memory = await memoryService.getSessionMemory(session.id);
     const ragResult = await ragService.answerQuestion({ question: message, memory });
 
     const lowerMessage = message.toLowerCase();
