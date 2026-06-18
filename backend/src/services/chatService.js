@@ -31,20 +31,38 @@ export const chatService = {
     const isUnsupportedAction = unsupportedActionKeywords.some(kw => lowerMessage.includes(kw));
     const noDocsFound = !ragResult.sources || ragResult.sources.length === 0;
 
-    const isUnableToAnswer = ragResult.answer && (
-      ragResult.answer.toLowerCase().includes('cannot find information') || 
-      ragResult.answer.toLowerCase().includes('unable to find') ||
-      ragResult.answer.toLowerCase().includes('do not have information')
-    );
+    const lowerAnswer = (ragResult.answer || '').toLowerCase();
+    const unableToAnswerPhrases = [
+      'cannot find information',
+      'unable to find',
+      'do not have information',
+      'don\'t have information',
+      'should be escalated',
+      'outside my knowledge',
+      'not related to',
+      'no relevant information',
+      'i\'m not able to help',
+      'beyond my scope',
+      'cannot assist with',
+      'i don\'t have enough information',
+      'no information available'
+    ];
+    const isUnableToAnswer = unableToAnswerPhrases.some(phrase => lowerAnswer.includes(phrase));
 
-    const shouldEscalate = isUnsupportedAction || noDocsFound || isUnableToAnswer;
+    const hasHistory = memory && memory.trim().length > 0;
+    const effectiveThreshold = hasHistory ? 0.5 : CONFIDENCE_THRESHOLD;
+    const isBelowConfidenceThreshold = (ragResult.confidence || 0) < effectiveThreshold;
+
+    const shouldEscalate = isUnsupportedAction || noDocsFound || isUnableToAnswer || isBelowConfidenceThreshold;
 
     if (shouldEscalate) {
       const reason = isUnsupportedAction
         ? 'Action requested that AI cannot perform'
         : noDocsFound
         ? 'No relevant documents found in knowledge base'
-        : 'Query is outside the knowledge base';
+        : isUnableToAnswer
+        ? 'Query is outside the knowledge base'
+        : `Low confidence score (${ragResult.confidence}) below threshold (${effectiveThreshold})`;
 
       const escalation = await escalationService.escalate({
         sessionId: session.id,

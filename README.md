@@ -1,202 +1,401 @@
-# 🤖 AI Customer Support Agent (RAG-Powered)
+<p align="center">
+  <h1 align="center">AI-Powered Customer Support Agent</h1>
+  <p align="center">
+    A full-stack, context-aware support system built on Retrieval-Augmented Generation.<br/>
+    Resolves Tier-1 queries autonomously · Escalates edge cases with structured handoffs · Learns from feedback.
+  </p>
+</p>
 
-An enterprise-ready, full-stack customer support automation system. Built on a Retrieval-Augmented Generation (RAG) architecture using Express, React, PostgreSQL, ChromaDB, and Google Gemini API (via LangChain).
-
-The system automates handling customer queries using a dynamic semantic knowledge base, calculates response confidence, logs feedback, presents a dashboard with detailed business intelligence charts, and implements an automated escalation loop to hand over low-confidence/complex queries to human agents.
+<p align="center">
+  <img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/react-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/gemini-2.5--flash-4285F4?style=flat-square&logo=google&logoColor=white" />
+  <img src="https://img.shields.io/badge/postgres-16-4169E1?style=flat-square&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/chromadb-vector--store-FF6F00?style=flat-square" />
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
+</p>
 
 ---
 
-## 🏗️ System Architecture & Workflow
+## Table of Contents
 
-The system is designed with a decoupled frontend/backend structure, utilizing a vector database for semantic retrieval and a relational database for chat histories, configurations, and analytical insights.
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Reference](#api-reference)
+- [Demo & Testing](#demo--testing)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+Support teams spend **60–80 %** of their time answering the same 20 questions. This system replaces Tier-1 support with an intelligent agent that:
+
+1. **Retrieves** relevant knowledge from product docs, FAQs, and past tickets using semantic search.
+2. **Generates** accurate, context-aware responses via Google Gemini with full conversation memory.
+3. **Escalates** edge cases — low confidence, out-of-scope queries, or actionable requests — to a human queue with a complete context summary so the agent never re-reads the thread.
+4. **Learns** from user feedback to surface knowledge gaps and continuously improve the knowledge base.
+
+---
+
+## Architecture
 
 ```mermaid
 graph TD
-    User([Customer]) -->|1. Sends Message| Frontend[React + Vite Frontend]
-    Frontend -->|2. HTTP API Route| Backend[Express Backend /api/v1/chat]
-    
-    subgraph RAG & AI Pipeline
-        Backend -->|3. Get Embedding| EmbedService{Embedding Service}
-        EmbedService -->|4a. Primary| GeminiEmbed[Gemini API: gemini-embedding-001]
-        EmbedService -->|4b. Fallback| LocalEmbed[Local TF Hashing Vectorizer]
-        
-        Backend -->|5. Vector Search| Chroma[(ChromaDB Vector Store)]
-        Chroma -->|6. Retrieve Sources| Backend
-        
-        Backend -->|7. Formulate Prompt with Memory| GeminiChat[Gemini API: gemini-2.5-flash]
-        GeminiChat -->|8. Support Answer| Backend
-    end
-    
-    subgraph Persistent Storage & Guards
-        Backend -->|9. Audit & Save Msg| Postgres[(PostgreSQL DB)]
-        Backend -->|10. Check Guards / Confidence| GuardEngine{Guardrails Engine}
-        GuardEngine -->|Escalate| EscalationQueue[Postgres Escalations Table]
-        GuardEngine -->|Resolve| Frontend
+    User([Customer]) -->|Sends Message| Frontend[React + Vite Frontend]
+    Frontend -->|HTTP POST /api/v1/chat| Backend[Express API Server]
+
+    subgraph "RAG Pipeline"
+        Backend -->|1 · Embed query| EmbedService{Embedding Service}
+        EmbedService -->|Primary| GeminiEmbed[Gemini gemini-embedding-001]
+        EmbedService -.->|Fallback| LocalEmbed[Local TF Hashing Vectorizer]
+        Backend -->|2 · Semantic search top-5| ChromaDB[(ChromaDB)]
+        ChromaDB -->|Ranked chunks| Backend
+        Backend -->|3 · Prompt + Memory + Context| GeminiLLM[Gemini 2.5 Flash]
+        GeminiLLM -->|Generated answer| Backend
     end
 
-    Admin([Admin / Agent]) -->|Review & Configure| AdminDashboard[Admin UI]
-    AdminDashboard -->|Manage Knowledge| Chroma
-    AdminDashboard -->|Manage Config / Settings| Postgres
-    AdminDashboard -->|Analyze Trends| Postgres
+    subgraph "Confidence & Guardrails"
+        Backend -->|4 · Score & classify| Guard{Guardrails Engine}
+        Guard -->|Below threshold / keyword trigger| EscQ[Escalation Queue]
+        Guard -->|Above threshold| Frontend
+    end
+
+    subgraph "Persistence"
+        Backend -->|Audit trail| Postgres[(PostgreSQL)]
+        Backend -->|Feedback signals| Postgres
+    end
+
+    Admin([Admin / Agent]) -->|Dashboard| AdminUI[Admin Panel]
+    AdminUI --> Postgres
+    AdminUI --> ChromaDB
 ```
 
----
+**Data flow in a single request:**
 
-## 🌟 Key Features
-
-### 1. 💬 Interactive RAG-Powered Chatbot
-* **Semantic Retrieval**: Queries retrieve the top 5 most relevant support chunks from ChromaDB before sending prompts to Google Gemini.
-* **Smart Memory**: Utilizes conversation history/memory windowing to maintain contextual threads.
-* **Deterministic Fallback Embeddings**: If the Gemini embedding service experiences outages or quota limits, the system falls back to a deterministic 384-dimensional term-frequency hashing vectorizer to prevent downtime.
-* **Confidence Scoring**: Each response is assigned a calculated confidence score using:
-  $$\text{Confidence} = (\text{RetrievalScore} \times 0.65) + (\min(\frac{\text{SourceCount}}{3}, 1) \times 0.20) + (\text{LengthFactor} \times 0.15)$$
-
-### 2. 🛡️ Intelligent Escalation Engine
-* **Keyword Safeguards**: Automatically triggers a human hand-off when customers request actions the AI cannot execute (e.g. `refund`, `cancel my order`, `change my email`, `charge`, `delete my account`).
-* **Confidence Guardrails**: Conversation escalates to human agents if the confidence score drops below the admin-defined threshold.
-* **Knowledge Gap Detection**: Triggers escalation when zero matching articles are retrieved from ChromaDB, or when the LLM responds that it cannot find the relevant information.
-
-### 3. 📊 Executive Analytics & Admin Dashboard
-* **Dynamic Analytics Charts**:
-  * **Volume Trends**: Daily request counts (Interactive Recharts Line Chart).
-  * **Resolution Ratios**: AI-resolved vs. Human-escalated tickets (Interactive Pie Chart).
-  * **Topic Breakdown**: Category-wise request distribution (Interactive Bar Chart).
-* **Unresolved Questions Tracker**: Highlights queries that triggered escalations so admins can see exactly what documentation is missing from the Knowledge Base.
-
-### 4. 📚 Live Knowledge Base Management
-* **Document Uploader**: Direct upload support for text files and PDFs, processed using automated sentence-splitting algorithms.
-* **Article Editor**: Search, filter, edit, or add articles manually, with real-time embedding updates synchronized directly to ChromaDB.
-
-### 5. ⚙️ Custom Persona Configurator
-* **Custom Identity**: Tailor the bot name, welcome messages, and system instructions.
-* **Real-time Rules**: Adjust the confidence threshold sliding scale and change fallback responses instantly.
+| Step | Component | Action |
+|:----:|:----------|:-------|
+| 1 | Embedding Service | Convert user query to a 768-dim vector (Gemini) or 384-dim fallback |
+| 2 | ChromaDB | Return top-5 semantically similar knowledge chunks |
+| 3 | LangChain + Gemini | Generate answer using retrieved context + conversation memory |
+| 4 | Guardrails Engine | Compute confidence score; check keyword triggers; decide resolve vs. escalate |
+| 5 | PostgreSQL | Persist message, analytics event, and optional escalation record |
 
 ---
 
-## 💻 Tech Stack
+## Key Features
 
-### Backend
-* **Runtime**: Node.js & Express (ES Modules)
-* **AI & LLM**: Google Gemini API (`@google/generative-ai`), LangChain (`@langchain/core`, `@langchain/google-genai`)
-* **Vector Store**: ChromaDB
-* **Relational Database**: PostgreSQL (client via `pg`)
-* **Libraries**: `pdf-parse` (for PDF processing), `zod` (validation), `multer` (file uploads)
+### 1 · RAG Knowledge Base
 
-### Frontend
-* **Framework**: React 19 + Vite
-* **Styling**: TailwindCSS & Lucide Icons
-* **Charts**: Recharts
-* **Markdown Rendering**: React Markdown & Remark GFM
+- Ingest product docs via **PDF upload**, **plain text**, or **manual article entry**.
+- Documents are sentence-split using LangChain text splitters and embedded into ChromaDB.
+- Each query retrieves the **top-5** most relevant chunks before generation.
+- **Deterministic fallback embeddings** — when the Gemini API is unavailable, the system switches to a local 384-dimensional term-frequency hashing vectorizer to prevent downtime.
+
+### 2 · Multi-Turn Conversation Memory
+
+- Maintains a sliding window of the last **12 messages** per session (configurable via `MAX_MEMORY_MESSAGES`).
+- Follow-up questions are resolved in context without requiring the user to repeat themselves.
+
+### 3 · Confidence Scoring & Intelligent Escalation
+
+Every AI response receives a composite confidence score:
+
+$$\text{Confidence} = \underbrace{(\text{RetrievalScore} \times 0.65)}_{\text{Semantic relevance}} + \underbrace{(\min(\tfrac{\text{SourceCount}}{3},\, 1) \times 0.20)}_{\text{Evidence breadth}} + \underbrace{(\text{LengthFactor} \times 0.15)}_{\text{Answer quality}}$$
+
+Escalation triggers automatically under any of these conditions:
+
+| Trigger | Example |
+|:--------|:--------|
+| **Keyword safeguard** | `refund`, `cancel my order`, `delete my account`, `charge` |
+| **Low confidence score** | Composite score falls below the configurable `CONFIDENCE_THRESHOLD` (default 0.65) |
+| **Zero retrieval matches** | Query has no relevant documents in the knowledge base |
+| **LLM self-assessment** | Model responds with "cannot find information", "beyond my scope", or equivalent |
+
+> **Note:** For multi-turn follow-up queries, the confidence threshold is dynamically relaxed to `0.50` to prevent false-positive escalations on short contextual questions.
+
+On escalation, the system generates a **structured handoff summary** via a dedicated LangChain chain so the human agent has complete context on arrival.
+
+### 4 · Live Chat Interface
+
+- Real-time chat UI with **typing indicators**, **message timestamps**, and **markdown rendering**.
+- Visual distinction between AI-generated responses and human-agent messages.
+- **Escalation banner** displayed when a conversation is routed to the human queue.
+- **Confidence pill** on each AI message showing the computed score.
+- **Feedback buttons** (👍 / 👎) on every AI response.
+
+### 5 · Admin Analytics Dashboard
+
+- **Query Volume Trends** — daily request counts (interactive line chart).
+- **Resolution Ratios** — AI-resolved vs. human-escalated (interactive pie chart).
+- **Topic Breakdown** — category-wise distribution (interactive bar chart).
+- **Unresolved Questions Tracker** — surfaces queries that triggered escalations to highlight knowledge gaps.
+- **Feedback Statistics** — positive vs. negative rating breakdown.
+
+### 6 · Knowledge Base Management
+
+- **Upload** PDF or text files — documents are automatically chunked and embedded.
+- **Search, filter, edit, or add** articles manually via the admin panel.
+- Changes are synchronized to ChromaDB in real time.
+
+### 7 · Agent Persona Configuration
+
+- Customize bot name, welcome message, and system instructions.
+- Adjust the **confidence threshold** via a sliding scale.
+- Modify fallback responses — all changes take effect immediately.
 
 ---
 
-## 📂 Project Structure
+## Tech Stack
 
-```txt
+| Layer | Technology |
+|:------|:-----------|
+| **Runtime** | Node.js (ES Modules) + Express |
+| **AI / LLM** | Google Gemini API (`@google/generative-ai`), LangChain (`@langchain/core`, `@langchain/google-genai`) |
+| **Vector Store** | ChromaDB |
+| **Database** | PostgreSQL 16 (via `pg`) |
+| **Validation** | Zod |
+| **File Processing** | `pdf-parse`, `multer` |
+| **Frontend** | React 19 + Vite |
+| **Styling** | TailwindCSS + Lucide Icons |
+| **Charts** | Recharts |
+| **Markdown** | `react-markdown` + `remark-gfm` |
+| **Routing** | `react-router-dom` |
+| **Infrastructure** | Docker Compose (PostgreSQL + ChromaDB) |
+
+---
+
+## Project Structure
+
+```
+AI-SUPPORT-AGENT/
 ├── backend/
 │   ├── src/
-│   │   ├── ai/            # Gemini & LangChain prompt chain definitions
-│   │   ├── config/        # Environment configurations & database connections
-│   │   ├── controllers/   # Request and response controllers
-│   │   ├── database/      # SQL schema migrations and demo seed scripts
-│   │   ├── middleware/    # Error handling, logging, and validations
-│   │   ├── repositories/  # Database access layer (PostgreSQL)
-│   │   ├── routes/        # Express router mount points
-│   │   ├── services/      # Core business logic (RAG, Chat, Escalation, Analytics)
-│   │   ├── utils/         # Helper functions (logging, confidence scores)
-│   │   ├── validators/    # Zod payload validators
-│   │   └── vector/        # ChromaDB clients and retrieval helpers
+│   │   ├── ai/                # Gemini client, LangChain prompt chains
+│   │   │   ├── chains/        # RAG answer chain, escalation summary chain
+│   │   │   └── prompts/       # Prompt templates
+│   │   ├── config/            # Environment & database connection config
+│   │   ├── constants/         # Confidence thresholds, system constants
+│   │   ├── controllers/       # Express request handlers
+│   │   ├── database/          # SQL migrations & demo seed scripts
+│   │   ├── middleware/        # Error handling, logging, validation
+│   │   ├── repositories/     # PostgreSQL data access layer
+│   │   ├── routes/            # Express router definitions
+│   │   ├── services/          # Core business logic
+│   │   │   ├── chatService.js
+│   │   │   ├── ragService.js
+│   │   │   ├── embeddingService.js
+│   │   │   ├── escalationService.js
+│   │   │   ├── analyticsService.js
+│   │   │   ├── feedbackService.js
+│   │   │   ├── memoryService.js
+│   │   │   └── documentIngestionService.js
+│   │   ├── utils/             # Confidence scoring, logger, error classes
+│   │   ├── validators/        # Zod request payload schemas
+│   │   └── vector/            # ChromaDB client & retrieval helpers
+│   ├── uploads/               # Uploaded document staging directory
 │   ├── package.json
 │   └── nodemon.json
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── api/           # Axios API connectors to the backend
+│   │   ├── api/               # Axios API connectors
 │   │   ├── components/
-│   │   │   ├── admin/     # Settings, escalations, KB, and analytics graphs
-│   │   │   ├── chat/      # Conversation bubble list, input fields, header
-│   │   │   └── layout/    # App shell, responsive sidebar
-│   │   ├── hooks/         # React hooks for API state integration
-│   │   ├── index.css      # Core styles & Tailwind directives
-│   │   └── main.jsx       # App entry point
+│   │   │   ├── admin/         # Dashboard, charts, KB manager, settings
+│   │   │   ├── chat/          # Chat page, message bubbles, input bar
+│   │   │   └── layout/        # App shell, responsive sidebar
+│   │   ├── hooks/             # Custom React hooks for API state
+│   │   ├── data/              # Static/mock data assets
+│   │   ├── utils/             # Frontend utility helpers
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── public/
 │   ├── package.json
+│   ├── vite.config.js
 │   └── tailwind.config.js
 │
 ├── docs/
-│   └── RUN_LOCALLY.md     # In-depth setup guide and test cases
-└── docker-compose.yml     # Local services (PostgreSQL & ChromaDB)
+│   └── RUN_LOCALLY.md         # Detailed setup guide & test cases
+├── docker-compose.yml         # PostgreSQL 16 + ChromaDB containers
+└── README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-Follow these quick commands to spin up the application. For detailed, step-by-step setup guides, refer to the [Local Run Guide (docs/RUN_LOCALLY.md)](file:///Users/aadish/Desktop/AI%20%20Support%20Agent/docs/RUN_LOCALLY.md).
+### Prerequisites
 
-### 1. Run Databases (Docker)
-Start the PostgreSQL and ChromaDB containers in the background:
+| Tool | Version |
+|:-----|:--------|
+| **Node.js** | ≥ 18 |
+| **Docker** & **Docker Compose** | Latest |
+| **Google Gemini API Key** | [Get one here](https://aistudio.google.com/apikey) |
+
+### 1 — Start Infrastructure
+
 ```bash
 docker compose up -d
 ```
 
-### 2. Set Up Backend Env & Dependencies
+Verify both containers are running:
+
+```bash
+docker ps
+# Expected: ai-support-postgres, ai-support-chroma
+```
+
+### 2 — Configure & Launch Backend
+
 ```bash
 cd backend
 cp .env.example .env
 ```
-Open `backend/.env` and update the `GEMINI_API_KEY`:
+
+Open `backend/.env` and set your Gemini API key:
+
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
-Now install packages, run SQL schema migrations, and load demo support documents into ChromaDB:
+
+Install dependencies, run migrations, seed the demo knowledge base, and start the server:
+
 ```bash
 npm install
-npm run migrate
-npm run seed
-npm run dev
+npm run migrate    # Create PostgreSQL tables
+npm run seed       # Load sample support docs into ChromaDB
+npm run dev        # Start on http://localhost:5050
 ```
-The backend API service is hosted at `http://localhost:5050` (healthcheck: `http://localhost:5050/health`).
 
-### 3. Run Frontend App
-In a new terminal window:
+Verify the backend is healthy:
+
+```bash
+curl http://localhost:5050/health
+```
+
+### 3 — Launch Frontend
+
+In a new terminal:
+
 ```bash
 cd frontend
 cp .env.example .env
 npm install
-npm run dev
+npm run dev        # Start on http://localhost:5173
 ```
-Open the Vite local URL, usually at `http://localhost:5173`.
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## ⚡ API Endpoints Summary
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `NODE_ENV` | `development` | Runtime environment |
+| `PORT` | `5050` | API server port |
+| `API_PREFIX` | `/api/v1` | Base path for all API routes |
+| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/ai_support_agent` | PostgreSQL connection string |
+| `GEMINI_API_KEY` | — | **Required.** Google Gemini API key |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | LLM model for answer generation |
+| `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001` | Embedding model for vector search |
+| `CHROMA_URL` | `http://localhost:8000` | ChromaDB server URL |
+| `CHROMA_COLLECTION` | `support_knowledge_base` | ChromaDB collection name |
+| `CONFIDENCE_THRESHOLD` | `0.65` | Minimum score before escalation |
+| `MAX_MEMORY_MESSAGES` | `12` | Conversation memory window size |
+| `UPLOAD_DIR` | `uploads` | Directory for uploaded documents |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `VITE_API_BASE_URL` | `/api/v1` | Backend API base URL (proxied by Vite) |
+
+---
+
+## API Reference
 
 | Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/health` | `GET` | System health check status |
-| `/api/v1/chat` | `POST` | Send chat message & trigger RAG orchestration |
-| `/api/v1/chat/sessions/:id` | `GET` | Get message history for a session |
-| `/api/v1/knowledge` | `GET` / `POST` | List or manually add knowledge base articles |
-| `/api/v1/knowledge/upload` | `POST` | Upload PDF/text file to extract and sync to ChromaDB |
-| `/api/v1/feedback` | `POST` | Log customer thumbs-up/down ratings and comments |
-| `/api/v1/escalations` | `GET` / `POST` | View list of active human-escalations / resolve escalations |
-| `/api/v1/analytics/overview` | `GET` | Fetch metrics, trends, topic graphs, unresolved questions |
-| `/api/v1/analytics/settings` | `GET` / `PUT` | Read/Write global agent settings (Persona, thresholds) |
+|:---------|:------:|:------------|
+| `/health` | `GET` | System health check |
+| `/api/v1/chat/message` | `POST` | Send a message — triggers the full RAG pipeline |
+| `/api/v1/chat/sessions/:sessionId/messages` | `GET` | Retrieve message history for a session |
+| `/api/v1/knowledge/documents` | `GET` | List all knowledge base documents |
+| `/api/v1/knowledge/documents/:documentId` | `DELETE` | Remove a document from the knowledge base |
+| `/api/v1/knowledge/documents` | `POST` | Upload a PDF or text file for ingestion (multipart) |
+| `/api/v1/knowledge/faqs` | `POST` | Add a new FAQ article manually |
+| `/api/v1/feedback` | `POST` | Submit thumbs-up / thumbs-down feedback |
+| `/api/v1/escalations` | `GET` | List escalated conversations (filterable by status) |
+| `/api/v1/escalations/:escalationId` | `GET` | Get details for a specific escalation |
+| `/api/v1/escalations/:escalationId/status` | `PATCH` | Resolve or update an escalation status |
+| `/api/v1/analytics/summary` | `GET` | Fetch dashboard summary metrics |
+| `/api/v1/analytics/topics` | `GET` | Topic breakdown distribution |
+| `/api/v1/analytics/unresolved-questions` | `GET` | Queries that triggered escalation |
+| `/api/v1/analytics/feedback` | `GET` | Feedback statistics |
 
 ---
 
-## 🛠️ Testing the Setup
+## Demo & Testing
 
-To verify that the RAG pipeline and escalation guardrails are running correctly, open the chat page and try the following queries:
+After setup, open the chat interface and try these queries to verify the full pipeline:
 
-1. **Successful RAG Answer**:
-   > *"My laptop battery drains quickly."*
-   > *Response:* Will return specific steps (e.g. background apps, battery saver mode, calibration) retrieved from the seeded knowledge base documents with a high confidence score.
+### ✅ Successful RAG Resolution
 
-2. **AI Action Guardrail Escalation**:
-   > *"I was charged incorrectly and want a refund."*
-   > *Response:* Triggers the keyword check for `refund`. The system will reply: *"This request requires human assistance. Connecting you to a support specialist..."* and create a record in the Admin Escalations queue.
+> **User:** _"My laptop battery drains quickly."_
+>
+> **Expected:** The agent retrieves relevant knowledge chunks and responds with specific troubleshooting steps (background apps, battery saver mode, calibration). Confidence score should be high.
 
-3. **Knowledge Base Gap Escalation**:
-   > *"How do I fix a broken spaceship engine?"*
-   > *Response:* Will not find any matching docs in ChromaDB. The system will fall back, notify that it cannot find relevant info, and escalate the query to the human agent queue.
+### ✅ Multi-Turn Follow-Up
+
+> **User:** _"How long does calibration take?"_
+>
+> **Expected:** Without re-stating the topic, the agent understands "calibration" refers to the laptop battery discussion and provides a direct answer using conversation memory.
+
+### 🚨 Keyword-Based Escalation
+
+> **User:** _"I was charged incorrectly and want a refund."_
+>
+> **Expected:** The keyword `refund` triggers an automatic escalation. The user sees a handoff message and the escalation appears in the admin queue with a generated context summary.
+
+### 🚨 Knowledge Gap Escalation
+
+> **User:** _"How do I fix a broken spaceship engine?"_
+>
+> **Expected:** Retrieved documents have very low semantic similarity. The confidence score (≈ 0.29) falls below the 0.65 threshold, triggering automatic escalation. The user sees a handoff message and the query is logged as an unresolved question in the admin dashboard.
+
+### Success Criteria
+
+| Metric | Target |
+|:-------|:-------|
+| Autonomous resolution rate | ≥ 70 % of test queries |
+| Out-of-scope detection | 100 % of escalation test cases |
+| Admin dashboard | Renders real data from the demo session |
+| Follow-up handling | Correctly references earlier turns |
+| Knowledge base refresh | Updates reflected in ≤ 60 seconds |
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|:--------|:---------|
+| `Gemini key is missing` | Check `backend/.env` has a valid `GEMINI_API_KEY` and restart the backend |
+| `npm run seed` fails | Ensure Docker containers are running (`docker compose up -d`) and the API key is valid |
+| Gemini embeddings unavailable | The backend automatically falls back to local deterministic embeddings — the demo will still run |
+| Frontend shows network errors | Verify the backend is running on port `5050` |
+| Database connection refused | Run `docker compose ps` and check `docker compose logs postgres` |
+| ChromaDB connection refused | Run `docker compose logs chroma` |
+
+---
+
+<p align="center">
+  Built with ❤️ using Google Gemini, LangChain, React, and PostgreSQL
+</p>
