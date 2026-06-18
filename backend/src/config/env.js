@@ -10,8 +10,8 @@ export const env = {
   geminiApiKey: process.env.GEMINI_API_KEY,
   geminiModel: process.env.GEMINI_MODEL ?? 'gemini-1.5-flash',
   geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL ?? 'text-embedding-004',
-  chromaUrl: process.env.CHROMA_URL ?? 'http://localhost:8000',
-  chromaCollection: process.env.CHROMA_COLLECTION ?? 'support_knowledge_base',
+  pineconeApiKey: process.env.PINECONE_API_KEY,
+  pineconeIndex: process.env.PINECONE_INDEX ?? 'support-agent',
   confidenceThreshold: Number(process.env.CONFIDENCE_THRESHOLD ?? 0.65),
   maxMemoryMessages: Number(process.env.MAX_MEMORY_MESSAGES ?? 12),
   uploadDir: process.env.UPLOAD_DIR ?? 'uploads'

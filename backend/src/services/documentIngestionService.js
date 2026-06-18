@@ -75,7 +75,7 @@ export const documentIngestionService = {
   async deleteDocument(documentId) {
     const document = await knowledgeRepository.delete(documentId);
     if (document) {
-      await vectorStore.deleteDocument(documentId);
+      await vectorStore.deleteDocument(documentId, document.chunks_count);
     }
     return document;
   }

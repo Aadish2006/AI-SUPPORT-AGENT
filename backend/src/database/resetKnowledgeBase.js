@@ -1,13 +1,13 @@
-import { chromaClient } from '../vector/chromaClient.js';
-import { chromaConfig } from '../config/chroma.js';
+import { getPineconeIndex } from '../vector/pineconeClient.js';
 import { query, pool } from './pool.js';
 import { logger } from '../utils/logger.js';
 
 try {
-  await chromaClient.deleteCollection({ name: chromaConfig.collectionName });
-  logger.info(`Deleted Chroma collection ${chromaConfig.collectionName}`);
+  const index = getPineconeIndex();
+  await index.deleteAll();
+  logger.info('Deleted all vectors in Pinecone index');
 } catch (error) {
-  logger.warn(`Chroma collection reset skipped: ${error.message}`);
+  logger.warn(`Pinecone index reset skipped: ${error.message}`);
 }
 
 await query('DELETE FROM knowledge_documents');
