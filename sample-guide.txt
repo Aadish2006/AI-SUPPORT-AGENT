@@ -1,0 +1,15 @@
+ACME Corp Product Support Guide
+
+Product: ACME Smart Thermostat (Model T-1000)
+
+1. Battery Replacement:
+The ACME Smart Thermostat uses 2 AA lithium batteries. If the battery level drops below 15%, a red indicator light will blink on the display. To replace them, gently pull the thermostat faceplate off the wall mount, remove the old batteries, insert the new ones matching the polarity markings, and snap the faceplate back onto the wall.
+
+2. Wifi Pairing:
+To connect the thermostat to your Wifi network, press and hold the center button for 5 seconds until the menu appears. Select 'Settings', then 'Wifi Setup'. Open the ACME Smart Home app on your smartphone, tap 'Add Device', and select 'Thermostat'. Follow the on-screen instructions to scan the QR code on the back of the faceplate.
+
+3. Temperature Calibration:
+If the temperature reading seems inaccurate, go to Settings > Advanced > Calibration. You can adjust the displayed temperature up or down by up to 5 degrees to match a trusted thermometer.
+
+4. Customer Support Hours:
+For live agent assistance, please contact us Monday through Friday, 9:00 AM to 5:00 PM EST at 1-800-555-0199.

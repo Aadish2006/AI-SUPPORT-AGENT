@@ -55,7 +55,11 @@ export const chatService = {
     const effectiveThreshold = hasHistory ? 0.5 : CONFIDENCE_THRESHOLD;
     const isBelowConfidenceThreshold = (ragResult.confidence || 0) < effectiveThreshold;
 
-    const shouldEscalate = isUnsupportedAction || noDocsFound || isUnableToAnswer || isBelowConfidenceThreshold;
+    const isGreeting = isGreetingOrPleasantry(message);
+    const shouldEscalate = isUnsupportedAction || 
+                           (!isGreeting && noDocsFound) || 
+                           isUnableToAnswer || 
+                           (!isGreeting && isBelowConfidenceThreshold);
 
     if (shouldEscalate) {
       const reason = isUnsupportedAction
@@ -135,3 +139,15 @@ export const chatService = {
     return chatRepository.listMessages(sessionId);
   }
 };
+
+function isGreetingOrPleasantry(message) {
+  const lower = message.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+  const greetings = new Set([
+    'hi', 'hello', 'hey', 'greetings', 'sup', 'yo', 'hola', 'bonjour',
+    'good morning', 'good afternoon', 'good evening',
+    'how are you', 'how is it going', 'hows it going', 'whats up', 'whatsup',
+    'thank you', 'thanks', 'thanks a lot', 'thank you so much',
+    'cool', 'ok', 'okay', 'great', 'awesome', 'nice'
+  ]);
+  return greetings.has(lower) || (lower.split(/\s+/).length <= 2 && [...greetings].some(g => lower.includes(g)));
+}

@@ -4,7 +4,8 @@ import { geminiConfig } from '../config/gemini.js';
 export const langchainChatModel = new ChatGoogleGenerativeAI({
   apiKey: geminiConfig.apiKey,
   model: geminiConfig.model,
-  temperature: 0.2
+  temperature: 0.4,
+  maxRetries: 5
 });
 
 export const langchainEmbeddings = new GoogleGenerativeAIEmbeddings({
