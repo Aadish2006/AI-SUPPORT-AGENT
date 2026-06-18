@@ -16,8 +16,8 @@ export const retriever = {
     return documents.map((content, index) => ({
       content,
       metadata: metadatas[index] ?? {},
-      distance: distances[index] ?? 1,
-      score: Math.max(0, 1 - (distances[index] ?? 1))
+      distance: distances[index] ?? 2,
+      score: Math.max(0, 1 - ((distances[index] ?? 2) / 2))
     }));
   }
 };

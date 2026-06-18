@@ -51,6 +51,8 @@ export const embeddingService = {
 
     for (const text of texts) {
       embeddings.push(await this.embedText(text));
+      // Artificial delay to respect Gemini Free Tier 15 RPM limit
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     return embeddings;
