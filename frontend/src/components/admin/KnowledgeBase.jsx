@@ -5,12 +5,12 @@ import { apiClient } from '../../api/client';
 const DOC_TYPES = [
   { value: 'pdf', label: 'PDF Document' },
   { value: 'faq', label: 'FAQ File' },
-  { value: 'policy', label: 'Company Policy' },
-  { value: 'documentation', label: 'Product Documentation' },
+  { value: 'product_doc', label: 'Product Documentation' },
+  { value: 'resolved_ticket', label: 'Resolved Ticket' },
 ];
 
 const INITIAL_DOCS = [
-  { id: 'doc-1', title: 'Hardware Warranty Policy', source_type: 'policy', source_name: 'warranty-policy.pdf', chunks_count: 8, created_at: '2026-06-10T10:00:00Z' },
+  { id: 'doc-1', title: 'Hardware Warranty Policy', source_type: 'product_doc', source_name: 'warranty-policy.pdf', chunks_count: 8, created_at: '2026-06-10T10:00:00Z' },
   { id: 'doc-2', title: 'Battery Calibration Guide', source_type: 'pdf', source_name: 'battery-guide.pdf', chunks_count: 4, created_at: '2026-06-11T14:30:00Z' },
   { id: 'doc-3', title: 'General Support FAQs', source_type: 'faq', source_name: 'faq-power.md', chunks_count: 12, created_at: '2026-06-12T09:15:00Z' },
 ];
@@ -74,7 +74,7 @@ export default function KnowledgeBase() {
     setSuccess(null);
 
     try {
-      const response = await apiClient.uploadDocument(formData);
+      await apiClient.uploadDocument(formData);
       setSuccess('Document successfully indexed and loaded!');
       setUploadTitle('');
       setSelectedFile(null);
@@ -164,15 +164,21 @@ export default function KnowledgeBase() {
 
   return (
     <div className="flex flex-col h-full bg-surface-900 overflow-y-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-surface-800/80 backdrop-blur-sm border-b border-white/[0.05] px-6 py-4">
-        <div>
-          <h1 className="text-lg font-bold text-white">Knowledge Base Manager</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Manage source documents, FAQs, and company policies for RAG</p>
-        </div>
-      </div>
-
       <div className="p-6 max-w-6xl w-full mx-auto space-y-6">
+        <div className="glass-card relative overflow-hidden p-6 sm:p-7 bg-gradient-card">
+          <div className="absolute inset-0 bg-gradient-glow opacity-25 pointer-events-none" />
+          <div className="relative flex flex-col gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-[11px] font-medium text-brand-300 w-fit">
+              <Database className="w-3 h-3" />
+              Knowledge source control
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Knowledge Base Manager</h1>
+            <p className="text-sm text-gray-400 max-w-2xl leading-relaxed">
+              Organize source files, FAQs, and policy documents that power the assistant's answers.
+            </p>
+          </div>
+        </div>
+
         {/* Alerts */}
         {error && (
           <div className="p-4 bg-accent-red/10 border border-accent-red/20 rounded-2xl flex items-center gap-3 text-xs text-accent-red">
@@ -234,6 +240,10 @@ export default function KnowledgeBase() {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-white/[0.05] bg-surface-700/50 p-3 text-[11px] text-gray-400 leading-relaxed">
+                Supported sources are indexed into the retrieval layer so the assistant can answer from verified material first.
               </div>
 
               <button
@@ -305,7 +315,24 @@ export default function KnowledgeBase() {
 
         {/* Current Indexed Documents list */}
         <div className="glass-card p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">Indexed Documents in Knowledge Base</h2>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Indexed Documents in Knowledge Base</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Documents are displayed with their source type, chunk count, and indexed date.</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-[11px] text-gray-400 bg-surface-700/70 border border-white/[0.05] px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
+              Ready for retrieval
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {DOC_TYPES.map((type) => (
+              <div key={type.value} className="rounded-xl border border-white/[0.05] bg-surface-700/40 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">{type.label}</p>
+                <p className="text-xs text-white mt-1">Ready to index</p>
+              </div>
+            ))}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -325,7 +352,11 @@ export default function KnowledgeBase() {
                       <FileText className="w-3.5 h-3.5 text-brand-400" />
                       {doc.title}
                     </td>
-                    <td className="py-3 capitalize text-gray-300">{doc.source_type || doc.sourceType}</td>
+                    <td className="py-3 capitalize text-gray-300">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-surface-700 border border-white/[0.05]">
+                        {doc.source_type || doc.sourceType}
+                      </span>
+                    </td>
                     <td className="py-3 font-mono text-gray-500">{doc.source_name || doc.sourceName || 'n/a'}</td>
                     <td className="py-3 text-center font-bold text-accent-green">{doc.chunks_count || doc.chunksCount || 0}</td>
                     <td className="py-3 text-gray-400">

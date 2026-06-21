@@ -4,10 +4,11 @@ import { formatPercent } from '../../utils/formatters';
 import { getConfidenceInfo } from '../../utils/formatters';
 
 export default function FeedbackStatsPanel({ stats, negativeList }) {
-  const { totalFeedback, thumbsUp, thumbsDown, positiveRate } = stats;
+  const { totalFeedback = 0, thumbsUp = 0, thumbsDown = 0, positiveRate = 0 } = stats || {};
 
   return (
-    <div className="glass-card p-5">
+    <div className="glass-card p-5 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-glow opacity-10 pointer-events-none" />
       <h3 className="text-sm font-semibold text-white mb-4">Feedback Statistics</h3>
 
       {/* Summary row */}
@@ -46,6 +47,13 @@ export default function FeedbackStatsPanel({ stats, negativeList }) {
         </div>
       </div>
 
+      <div className="flex items-center justify-between rounded-xl border border-white/[0.04] bg-surface-700/50 px-3 py-2 mb-5 text-[11px]">
+        <span className="text-gray-400">Quality signal</span>
+        <span className="font-semibold text-white">
+          {positiveRate >= 80 ? 'Strong' : positiveRate >= 60 ? 'Moderate' : 'Needs review'}
+        </span>
+      </div>
+
       {/* Negative feedback list */}
       <div>
         <div className="flex items-center gap-1.5 mb-3">
@@ -53,7 +61,7 @@ export default function FeedbackStatsPanel({ stats, negativeList }) {
           <h4 className="text-xs font-semibold text-gray-300">Recent Negative Feedback</h4>
         </div>
         <div className="space-y-2">
-          {negativeList.map((item) => {
+          {negativeList.length > 0 ? negativeList.map((item) => {
             const conf = getConfidenceInfo(item.confidence);
             return (
               <div
@@ -72,7 +80,11 @@ export default function FeedbackStatsPanel({ stats, negativeList }) {
                 </div>
               </div>
             );
-          })}
+          }) : (
+            <div className="rounded-xl border border-dashed border-white/[0.08] bg-surface-700/40 px-4 py-5 text-center text-xs text-gray-500">
+              No negative feedback has been collected yet.
+            </div>
+          )}
         </div>
       </div>
     </div>
